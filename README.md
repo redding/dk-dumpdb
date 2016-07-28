@@ -1,6 +1,8 @@
-# DkDumpdb
+# Dk::Dumpdb
 
-TODO: Write a gem description
+Build Dk tasks to dump and restore your databases.
+
+Note: this is a port of the [Dumpdb gem](https://github.com/redding/dumpdb) to work with [Dk](https://github.com/redding/dk) tasks.  The overall API/DSL is similar - you just build Dk tasks instead of "restores".
 
 ## Usage
 
