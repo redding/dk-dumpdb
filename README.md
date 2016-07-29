@@ -2,47 +2,59 @@
 
 Build Dk tasks to dump and restore your databases.
 
-Note: this is a port of the [Dumpdb gem](https://github.com/redding/dumpdb) to work with [Dk](https://github.com/redding/dk) tasks.  The overall API/DSL is similar - you just build Dk tasks instead of "restores".
+Note: this is a port of the [Dumpdb gem](https://github.com/redding/dumpdb) to work with [Dk](https://github.com/redding/dk) tasks.  The overall API/DSL is similar - you still define restore scripts but they are run using Dk tasks.
 
 ## Usage
 
 ```ruby
 require 'dk-dumpdb'
 
-class MysqlFullRestore
-  include Dk::Dumpdb::Task
+class MysqlFullRestoreScript
+  include Dk::Dumpdb::Script
 
-  dump_file { "dump.bz2" }
-  source do
-    { :host        => 'production.example.com',
-      :port        => 1234,
-      :user        => 'admin',
-      :pw          => 'secret',
-      :db          => 'myapp_db',
-      :output_root => '/some/source/dir'
-    }
-  end
-  target do
-    { :host        => 'localhost',
-      :user        => 'admin',
-      :db          => 'myapp_db',
-      :output_root => '/some/target/dir'
-    }
-  end
+  config do
+    dump_file{ "dump.bz2" }
 
-  dump    { "mysqldump -u :user -p\":pw\" :db | bzip2 > :dump_file" }
-  restore { "mysqladmin -u :user -p\":pw\" -f -b DROP :db; true" }
-  restore { "mysqladmin -u :user -p\":pw\" -f CREATE :db" }
-  restore { "bunzip2 -c :dump_file | mysql -u :user -p\":pw\" :db" }
+    source do
+      { :host        => 'production.example.com',
+        :port        => 1234,
+        :user        => 'admin',
+        :pw          => 'secret',
+        :db          => 'myapp_db',
+        :output_root => '/some/source/dir'
+      }
+    end
+    target do
+      { :host        => 'localhost',
+        :user        => 'admin',
+        :db          => 'myapp_db',
+        :output_root => '/some/target/dir'
+      }
+    end
+
+    dump{ "mysqldump -u :user -p\":pw\" :db | bzip2 > :dump_file" }
+    restore{ "mysqladmin -u :user -p\":pw\" -f -b DROP :db; true" }
+    restore{ "mysqladmin -u :user -p\":pw\" -f CREATE :db" }
+    restore{ "bunzip2 -c :dump_file | mysql -u :user -p\":pw\" :db" }
+  end
 
 end
 ```
 
-Dk::Dumpdb provides a framework for scripting database backups and restores in a Dk task.  You configure your source and target db settings.  You define the set of commands needed for your task to dump the (local or remote) source database and optionally restore the dump to the (local) target database.
+Dk::Dumpdb provides a framework for defining scripts that backup and restore databases.  You configure your source and target db settings.  You define the set of commands needed for your task to dump the (local or remote) source database and optionally restore the dump to the (local) target database.
 
 ### Running
 
-Once you have created a task with its database settings, you run it using Dk.
+Once you have configured a restore script, you run it using Dk task:
+
+```ruby
+class MysqlFullRestore
+  include Dk::Dumpdb::Task
+
+  # TODO
+
+end
+```
 
 ```ruby
 # in config/tasks.rb or whatever
@@ -57,46 +69,19 @@ $ dk mysql-restore
 
 Dk runs the task which runs the dump commands using source settings and runs the restore commands using target settings.  By default, Dk::Dumpdb assumes both the dump and restore commands are to be run on the local system.
 
-### Runner Callbacks
-
-Dk::Dumpdb supports defining callbacks for your task.  These get fired as the task is being run.
-
-```ruby
-class MysqlFullRestore
-  include Dk::Dumpdb::Task
-
-  # ...
-
-  def after_dump
-    # this will be called after the dump commands have been run
-  end
-
-end
-```
-
-Available callbacks:
-
-* `{before|after}_run` - called before/after any commands have been executed
-* `{before|after}_setup` - called before/after the runner sets up the task run
-* `{before|after}_dump` - called before/after the dump cmds are executed
-* `{before|after}_copy_dump` - called before/after the dump file is copied from source to target
-* `{before|after}_restore` - called before/after the restore cmds are executed
-* `{before|after}_teardown` - called before/after the runner tears down the task run
-* `{before|after}_cmd_run` - called before/after each cmd is run, passes the cmd obj being run
-
-Phases occur in this order: setup, dump, copy_dump, restore, teardown
-
 ### Remote dumps
 
 To run your dump commands on a remote server, specify the optional `ssh` setting.
 
 ```ruby
-class MysqlFullRestore
-  include Dk::Dumpdb::Task
+class MysqlFullRestoreScript
+  include Dk::Dumpdb::Script
 
-  ssh { 'user@host' }
+  config do
+    ssh { 'user@host' }
+    # ...
+  end
 
-  # ...
 end
 ```
 
@@ -117,9 +102,9 @@ Dk.configure do
 end
 ```
 
-## Define your task
+## Define your script
 
-Every Dk::Dumpdb task assumes there are two types of commands involved: dump commands that run using source settings and restore commands that run using target settings.  The dump commands should produce a single "dump file" (typically a compressed file or tar).  The restore commands restore the local db from the dump file.
+Every Dk::Dumpdb script assumes there are two types of commands involved: dump commands that run using source settings and restore commands that run using target settings.  The dump commands should produce a single "dump file" (typically a compressed file or tar).  The restore commands restore the local db from the dump file.
 
 ### The Dump File
 
@@ -185,25 +170,28 @@ restore { "bunzip2 -c :dump_file | mysql :db" }
 A Dk::Dumpdb task needs to be told about its source and target settings.  You tell it these when you define your task:
 
 ```ruby
-class MysqlFullRestore
-  include Dk::Dumpdb
+class MysqlFullRestoreScript
+  include Dk::Dumpdb::Script
 
-  source do
-    { :user      => 'something',
-      :pw        => 'secret',
-      :db        => 'something_production',
-      :something => 'else'
-    }
+  config do
+    source do
+      { :user      => 'something',
+        :pw        => 'secret',
+        :db        => 'something_production',
+        :something => 'else'
+      }
+    end
+
+    target do
+      { :user => 'root',
+        :pw   => 'supersecret',
+        :db   => 'something_development'
+      }
+    end
+
+    # ...
   end
 
-  target do
-    { :user => 'root',
-      :pw   => 'supersecret',
-      :db   => 'something_development'
-    }
-  end
-
-  # ...
 end
 ```
 
@@ -216,14 +204,14 @@ The task DSL settings methods all take a proc as their argument.  This is becaus
 Take this example where you want your dump task to honor ignored tables.
 
 ```ruby
-require 'dumpdb'
+class MysqlFullRestoreScript
+  include Dk::Dumpdb::Script
 
-class MysqlIgnoredTablesRestore
-  include Dk::Dumpdb::Task
-
-  # ...
-  dump { "mysqldump -u :user -p :pw :db #{ignored_tables} | bzip2 > :dump_file" }
-  # ...
+  config do
+    # ...
+    dump { "mysqldump -u :user -p :pw :db #{ignored_tables} | bzip2 > :dump_file" }
+    # ...
+  end
 
   def initialize(opts={})
     opts[:ignored_tables] ||= []
@@ -233,6 +221,7 @@ class MysqlIgnoredTablesRestore
   def ignored_tables
     @opts[:ignored_tables].map{ |t| "--ignore-table=#{source.db}.#{t}" }.join(' ')
   end
+
 end
 ```
 
