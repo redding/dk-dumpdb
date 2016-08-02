@@ -42,8 +42,18 @@ class Dk::Dumpdb::Task::Teardown
     setup do
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "run 2 cmds" do
+      assert_equal 2, subject.runs.size
+      rmdir_src, rmdir_targ = subject.runs
+
+      exp = @params['script'].dump_cmd{ "rm -rf #{source.output_dir}" }
+      assert_equal exp, rmdir_src.cmd_str
+
+      exp = @params['script'].restore_cmd{ "rm -rf #{target.output_dir}" }
+      assert_equal exp, rmdir_targ.cmd_str
+    end
 
   end
 

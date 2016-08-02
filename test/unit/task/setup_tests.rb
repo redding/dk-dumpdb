@@ -42,8 +42,18 @@ class Dk::Dumpdb::Task::Setup
     setup do
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "run 2 cmds" do
+      assert_equal 2, subject.runs.size
+      mkdir_src, mkdir_targ = subject.runs
+
+      exp = @params['script'].dump_cmd{ "mkdir -p #{source.output_dir}" }
+      assert_equal exp, mkdir_src.cmd_str
+
+      exp = @params['script'].restore_cmd{ "mkdir -p #{target.output_dir}" }
+      assert_equal exp, mkdir_targ.cmd_str
+    end
 
   end
 
