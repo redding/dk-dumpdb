@@ -31,7 +31,12 @@ class Dk::Dumpdb::Task::Restore
       now = Factory.time
       Assert.stub(Time, :now){ now }
 
-      set_dk_dumpdb_script_param
+      @restore_cmds = restore_cmds = Factory.integer(3).times.map{ Factory.string }
+      set_dk_dumpdb_script_param do
+        restore_cmds.each do |cmd_str|
+          restore{ cmd_str }
+        end
+      end
       @runner = test_runner(@task_class, :params => @params)
     end
 
@@ -42,8 +47,11 @@ class Dk::Dumpdb::Task::Restore
     setup do
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "run all restore cmds" do
+      assert_equal @restore_cmds, subject.runs.map(&:cmd_str)
+    end
 
   end
 
