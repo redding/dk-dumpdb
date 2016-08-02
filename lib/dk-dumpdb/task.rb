@@ -21,7 +21,7 @@ module Dk::Dumpdb
     module InstanceMethods
 
       def run!
-        script = self.class.script_class.new
+        script = self.class.script_class.new(params)
 
         run_task Setup,      'script' => script
         begin

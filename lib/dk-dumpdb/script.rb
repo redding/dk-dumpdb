@@ -20,6 +20,12 @@ module Dk::Dumpdb
 
     module InstanceMethods
 
+      attr_reader :params
+
+      def initialize(task_params = nil)
+        @params = task_params || {}
+      end
+
       def config
         @config ||= Config.new.tap do |config|
           self.class.config_blocks.each do |config_block|

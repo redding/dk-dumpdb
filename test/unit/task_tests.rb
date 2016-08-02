@@ -65,8 +65,12 @@ module Dk::Dumpdb::Task
     setup do
       @task_class.script_class Factory.script_class
 
+      @script_init_with = nil
       @script = @task_class.script_class.new
-      Assert.stub(@task_class.script_class, :new){ @script }
+      Assert.stub(@task_class.script_class, :new) do |*args|
+        @script_init_with = args
+        @script
+      end
 
       @runner.run
     end
@@ -82,6 +86,8 @@ module Dk::Dumpdb::Task
       assert_equal CopyDump, copydump.task_class
       assert_equal Restore,  restore.task_class
       assert_equal Teardown, teardown.task_class
+
+      assert_equal [@runner.params], @script_init_with
 
       subject.runs.each do |task_run|
         assert_equal @script, task_run.params['script']
