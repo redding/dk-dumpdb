@@ -8,7 +8,7 @@ module Dk::Dumpdb::Task
     desc "(dk-dumpdb) copy the given script's dump file from source to target"
 
     def run!
-      # TODO
+      copy_cmd! params['script'].copy_dump_cmd_args
     end
 
   end

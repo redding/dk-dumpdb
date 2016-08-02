@@ -8,7 +8,7 @@ module Dk::Dumpdb::Task
     desc "(dk-dumpdb) run the given script's dump cmds"
 
     def run!
-      # TODO
+      params['script'].dump_cmds.each{ |cmd_str| source_cmd!(cmd_str) }
     end
 
   end

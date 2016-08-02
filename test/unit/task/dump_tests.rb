@@ -31,7 +31,12 @@ class Dk::Dumpdb::Task::Dump
       now = Factory.time
       Assert.stub(Time, :now){ now }
 
-      set_dk_dumpdb_script_param
+      @dump_cmds = dump_cmds = Factory.integer(3).times.map{ Factory.string }
+      set_dk_dumpdb_script_param do
+        dump_cmds.each do |cmd_str|
+          dump{ cmd_str }
+        end
+      end
       @runner = test_runner(@task_class, :params => @params)
     end
 
@@ -42,8 +47,11 @@ class Dk::Dumpdb::Task::Dump
     setup do
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "run all dump cmds" do
+      assert_equal @dump_cmds, subject.runs.map(&:cmd_str)
+    end
 
   end
 

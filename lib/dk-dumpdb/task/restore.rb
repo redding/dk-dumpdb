@@ -8,7 +8,7 @@ module Dk::Dumpdb::Task
     desc "(dk-dumpdb) run the given script's restore cmds"
 
     def run!
-      # TODO
+      params['script'].restore_cmds.each{ |cmd_str| target_cmd!(cmd_str) }
     end
 
   end

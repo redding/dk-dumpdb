@@ -42,8 +42,15 @@ class Dk::Dumpdb::Task::CopyDump
     setup do
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "run a cmd to copy the dump" do
+      assert_equal 1, subject.runs.size
+      cp_dump = subject.runs.first
+
+      exp = @params['script'].copy_dump_cmd_args
+      assert_match /#{exp}\Z/, cp_dump.cmd_str
+    end
 
   end
 
