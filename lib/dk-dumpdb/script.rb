@@ -65,6 +65,11 @@ module Dk::Dumpdb
         self.config_blocks << block if !block.nil?
       end
 
+      def task_description(value = nil)
+        self::Task.description(value)
+      end
+      alias_method :task_desc, :task_description
+
     end
 
   end

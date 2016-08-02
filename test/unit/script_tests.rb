@@ -49,7 +49,7 @@ module Dk::Dumpdb::Script
     end
     subject{ @script_class }
 
-    should have_imeths :config_blocks, :config
+    should have_imeths :config_blocks, :config, :task_description, :task_desc
 
     should "know its config blocks" do
       assert_empty subject.config_blocks
@@ -63,6 +63,21 @@ module Dk::Dumpdb::Script
 
       assert_includes Dk::Dumpdb::Task, task_class
       assert_equal @script_class, task_class.script_class
+    end
+
+    should "set a description on its Task" do
+      assert_nil subject.task_description
+      assert_nil subject.task_desc
+
+      exp = Factory.string
+      subject.task_description exp
+      assert_equal exp, subject.task_description
+      assert_equal exp, subject.task_desc
+
+      exp = Factory.string
+      subject.task_desc exp
+      assert_equal exp, subject.task_description
+      assert_equal exp, subject.task_desc
     end
 
   end
