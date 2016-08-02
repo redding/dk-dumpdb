@@ -19,7 +19,7 @@ module Dk::Dumpdb::Script
   class MixinTests < UnitTests
     desc "mixin"
     setup do
-      @config_proc = config_proc = Proc.new do
+      @config_proc = Proc.new do
         ssh{ "user@host" }
 
         dump_file{ "dump.bz2" }
@@ -44,16 +44,19 @@ module Dk::Dumpdb::Script
       end
       @script_class = Class.new do
         include Dk::Dumpdb::Script
-        config &config_proc
       end
     end
     subject{ @script_class }
 
-    should have_imeths :config
+    should have_imeths :config_blocks, :config
 
-    should "store the config proc to eval when initialized" do
-      assert_equal @config_proc, subject.config
+    should "know its config blocks" do
+      assert_empty subject.config_blocks
+
+      subject.config(&@config_proc)
+      assert_equal [@config_proc], subject.config_blocks
     end
+
   end
 
   class InitTests < MixinTests
@@ -62,6 +65,7 @@ module Dk::Dumpdb::Script
       now = Factory.time
       Assert.stub(Time, :now){ now }
 
+      @script_class.config(&@config_proc)
       @script = @script_class.new
     end
     subject{ @script }

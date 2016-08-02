@@ -16,7 +16,9 @@ module Dk::Dumpdb
 
       def config
         @config ||= Config.new.tap do |config|
-          config.instance_eval(&self.class.config || proc{})
+          self.class.config_blocks.each do |config_block|
+            config.instance_eval(&config_block)
+          end
         end
       end
 
@@ -49,9 +51,12 @@ module Dk::Dumpdb
 
     module ClassMethods
 
+      def config_blocks
+        @config_blocks ||= []
+      end
+
       def config(&block)
-        @config_block = block if !block.nil?
-        @config_block
+        self.config_blocks << block if !block.nil?
       end
 
     end
