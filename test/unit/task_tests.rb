@@ -31,8 +31,19 @@ module Dk::Dumpdb::Task
     end
     subject{ @task_class }
 
+    should have_imeths :script_class
+
     should "be a Dk task" do
       assert_includes Dk::Task, subject
+    end
+
+    should "know its script class" do
+      assert_nil subject.script_class
+
+      value = Factory.string
+      subject.script_class value
+
+      assert_equal value, subject.script_class
     end
 
   end
@@ -52,10 +63,30 @@ module Dk::Dumpdb::Task
   class RunTests < InitTests
     desc "and run"
     setup do
+      @task_class.script_class Factory.script_class
+
+      @script = @task_class.script_class.new
+      Assert.stub(@task_class.script_class, :new){ @script }
+
       @runner.run
     end
+    subject{ @runner }
 
-    should "do something"
+    should "build an instance of its script class and run it" do
+      assert_equal 5, subject.runs.size
+
+      setup, dump, copydump, restore, teardown = subject.runs
+
+      assert_equal Setup,    setup.task_class
+      assert_equal Dump,     dump.task_class
+      assert_equal CopyDump, copydump.task_class
+      assert_equal Restore,  restore.task_class
+      assert_equal Teardown, teardown.task_class
+
+      subject.runs.each do |task_run|
+        assert_equal @script, task_run.params['script']
+      end
+    end
 
   end
 
@@ -67,7 +98,7 @@ module Dk::Dumpdb::Task
     end
     subject{ @context }
 
-    should "include Dk task test hepers" do
+    should "include Dk task test helpers" do
       assert_includes Dk::Task::TestHelpers, @context_class
     end
 

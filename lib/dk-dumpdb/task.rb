@@ -21,26 +21,26 @@ module Dk::Dumpdb
     module InstanceMethods
 
       def run!
-        # script = self.class.script_class.new
+        script = self.class.script_class.new
 
-        # run_task Setup,      'script' => script
-        # begin
-        #   run_task Dump,     'script' => script
-        #   run_task CopyDump, 'script' => script
-        #   run_task Restore,  'script' => script
-        # ensure
-        #   run_task Teardown, 'script' => script
-        # end
+        run_task Setup,      'script' => script
+        begin
+          run_task Dump,     'script' => script
+          run_task CopyDump, 'script' => script
+          run_task Restore,  'script' => script
+        ensure
+          run_task Teardown, 'script' => script
+        end
       end
 
     end
 
     module ClassMethods
 
-      # def script_class(value = nil)
-      #   @script_class = value if !value.nil?
-      #   @script_class
-      # end
+      def script_class(value = nil)
+        @script_class = value if !value.nil?
+        @script_class
+      end
 
     end
 
