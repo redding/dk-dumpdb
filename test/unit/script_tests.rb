@@ -3,6 +3,7 @@ require 'dk-dumpdb/script'
 
 require 'much-plugin'
 require 'dk-dumpdb/config'
+require 'dk-dumpdb/task'
 
 module Dk::Dumpdb::Script
 
@@ -55,6 +56,13 @@ module Dk::Dumpdb::Script
 
       subject.config(&@config_proc)
       assert_equal [@config_proc], subject.config_blocks
+    end
+
+    should "define a Task for the script class" do
+      task_class = @script_class::Task
+
+      assert_includes Dk::Dumpdb::Task, task_class
+      assert_equal @script_class, task_class.script_class
     end
 
   end

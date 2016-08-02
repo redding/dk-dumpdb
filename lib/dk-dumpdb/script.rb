@@ -1,5 +1,6 @@
 require 'much-plugin'
 require 'dk-dumpdb/config'
+require 'dk-dumpdb/task'
 
 module Dk::Dumpdb
 
@@ -9,6 +10,11 @@ module Dk::Dumpdb
     plugin_included do
       include InstanceMethods
       extend ClassMethods
+
+      class Task
+        include Dk::Dumpdb::Task
+      end
+      Task.script_class self
 
     end
 
