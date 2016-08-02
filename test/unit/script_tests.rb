@@ -93,6 +93,7 @@ module Dk::Dumpdb::Script
     end
     subject{ @script }
 
+    should have_readers :params
     should have_imeths :config
     should have_imeths :ssh, :dump_file, :source, :target, :copy_dump_cmd_args
     should have_imeths :dump_cmds, :restore_cmds
@@ -100,6 +101,15 @@ module Dk::Dumpdb::Script
     should have_imeths :source_hash, :target_hash
     should have_imeths :ssh?
     should have_imeths :dump_cmd, :restore_cmd
+
+    should "know its params" do
+      exp = {}
+      assert_equal exp, subject.params
+
+      params = { Factory.string => Factory.string }
+      script = @script_class.new(params)
+      assert_equal params, script.params
+    end
 
     should "know its config" do
       assert_instance_of Dk::Dumpdb::Config, subject.config
