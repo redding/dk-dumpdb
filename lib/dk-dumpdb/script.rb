@@ -11,10 +11,10 @@ module Dk::Dumpdb
       include InstanceMethods
       extend ClassMethods
 
-      class Task
+      class self::Task
         include Dk::Dumpdb::Task
       end
-      Task.script_class self
+      self::Task.script_class self
 
     end
 
