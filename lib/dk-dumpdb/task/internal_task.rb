@@ -1,7 +1,7 @@
 require 'dk/task'
 require 'much-plugin'
+require 'dk-dumpdb'
 
-module Dk::Dumpdb;end
 module Dk::Dumpdb::Task
 
   module InternalTask
@@ -27,8 +27,7 @@ module Dk::Dumpdb::Task
 
       def copy_cmd!(args)
         if (s = params['script']).ssh?
-          cmd! "sftp #{@dk_runner.ssh_args} #{@dk_runner.host_ssh_args[s.ssh]} " \
-               "#{s.ssh}:#{args}"
+          cmd! "scp #{try_param(Dk::Dumpdb::SCP_ARGS_PARAM_NAME)} #{s.ssh}:#{args}"
         else
           cmd! "cp #{args}"
         end

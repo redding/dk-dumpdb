@@ -4,6 +4,7 @@ require 'dk-dumpdb/task/internal_task'
 require 'dk'
 require 'dk/task'
 require 'much-plugin'
+require 'dk-dumpdb'
 
 module Dk::Dumpdb::Task::InternalTask
 
@@ -73,14 +74,12 @@ module Dk::Dumpdb::Task::InternalTask
 
     should "run source/copy cmds as remote Dk cmds if an ssh script" do
       @params['script'] = Factory.script{ ssh{ "hostname" } }
-      @ssh_args         = Factory.string
-      @host_ssh_args    = { "hostname" => Factory.string }
 
-      runner = test_runner(@task_class, {
-        :params        => @params,
-        :ssh_args      => @ssh_args,
-        :host_ssh_args => @host_ssh_args
-      })
+      if Factory.boolean
+        @params[Dk::Dumpdb::SCP_ARGS_PARAM_NAME] = Factory.string
+      end
+
+      runner = test_runner(@task_class, :params => @params)
       task   = runner.task
 
       task.cp_cmd_args = @cp_args
@@ -97,7 +96,7 @@ module Dk::Dumpdb::Task::InternalTask
       assert_equal "a source cmd", source_ssh.cmd_str
       assert_equal "a target cmd", target_cmd.cmd_str
 
-      exp = "sftp #{@ssh_args} #{@host_ssh_args[@params['script'].ssh]} " \
+      exp = "scp #{@params[Dk::Dumpdb::SCP_ARGS_PARAM_NAME]} " \
             "#{@params['script'].ssh}:#{@cp_args}"
       assert_equal exp, copy_cmd.cmd_str
     end
