@@ -13,8 +13,6 @@ class MysqlFullRestoreScript
   include Dk::Dumpdb::Script
 
   config do
-    dump_file{ "dump.bz2" }
-
     source do
       { :host        => 'production.example.com',
         :port        => 1234,
@@ -33,10 +31,15 @@ class MysqlFullRestoreScript
     end
 
     dump{ "mysqldump -u :user -p\":pw\" :db | bzip2 > :dump_file" }
+
+    dump_file{ "dump.bz2" }
+
     restore{ "mysqladmin -u :user -p\":pw\" -f -b DROP :db; true" }
     restore{ "mysqladmin -u :user -p\":pw\" -f CREATE :db" }
     restore{ "bunzip2 -c :dump_file | mysql -u :user -p\":pw\" :db" }
   end
+
+  task_desc "restore mysql data"
 
 end
 ```
@@ -45,26 +48,41 @@ Dk::Dumpdb provides a framework for defining scripts that backup and restore dat
 
 ### Running
 
-Once you have configured a restore script, you run it using Dk task:
+Each script automatically defines its own Dk task (`<ScriptClass>::Task`) that you can configure/use directly or that you can run from your own restore task.
 
 ```ruby
-class MysqlFullRestore
-  include Dk::Dumpdb::Task
+# configure the dumpdb script task and use directly
 
-  # TODO
+require 'dk'
 
-end
-```
-
-```ruby
-# in config/tasks.rb or whatever
 Dk.configure do
-  task 'mysql-restore', MysqlFullRestore
+  task 'restore-mysql', MysqlFullRestoreScript::Task
+end
+
+# OR use your own dk task to run the dumpdb script task
+
+class MysqlFullRestoreTask
+  include Dk::Task
+
+  def run!
+    # custom logic before the script run...
+
+    run_task MysqlFullRestoreScript::Task
+
+    # custom logic after the script run...
+  end
+
+end
+
+Dk.configure do
+  task 'restore-mysql', MysqlFullRestoreTask
 end
 ```
 
+Either way, to run use Dk's CLI:
+
 ```
-$ dk mysql-restore
+$ dk restore-mysql
 ```
 
 Dk runs the task which runs the dump commands using source settings and runs the restore commands using target settings.  By default, Dk::Dumpdb assumes both the dump and restore commands are to be run on the local system.
@@ -87,18 +105,56 @@ end
 
 This tells Dk::Dumpdb to run the dump commands using ssh on a remote host and to download the dump file using sftp.
 
-**Note**: you can configure SSH args using [Dk's config DSL](https://github.com/redding/dk#ssh_hosts-ssh_args-host_ssh_args).  These will be used by both the ssh and sftp dump commands.
+**Note**: you can configure SSH args using [Dk's config DSL](https://github.com/redding/dk#ssh_hosts-ssh_args-host_ssh_args).  These will be used by the ssh dump commands.
 
 ```ruby
 Dk.configure do
-  # these custom args will be on all SSH and SFTP dump cmds
+  # these custom args will be on all SSH dump cmds
   ssh_args "-o ForwardAgent=yes "\
            "-o ControlMaster=auto "\
            "-o ControlPersist=60s "\
            "-o UserKnownHostsFile=/dev/null "\
            "-o StrictHostKeyChecking=no "\
            "-o ConnectTimeout=10 "\
-           "-o LogLevel=quiet "
+           "-o LogLevel=quiet " \
+           "-tt "
+end
+```
+
+Dk::Dumpdb uses `scp` to tranfer remote dump files to the local system.  You can configure any custom scp args by setting a param:
+
+```ruby
+Dk.configure do
+  scp_args = "-o ForwardAgent=yes "\
+             "-o ControlMaster=auto "\
+             "-o ControlPersist=60s "\
+             "-o UserKnownHostsFile=/dev/null "\
+             "-o StrictHostKeyChecking=no "\
+             "-o ConnectTimeout=10 "\
+             "-o LogLevel=quiet "
+  dk_config.set_param(Dk::Dumpdb::SCP_ARGS_PARAM_NAME, scp_args)
+
+  task 'restore-mysql', MysqlFullRestoreScript::Task
+end
+```
+
+**Protip**: since scp and ssh cmds share ssh options, set those to a variable and reuse on both the ssh cmds and the scp dump file cmd:
+
+```ruby
+Dk.configure do
+  # reuse thise on both the ssh and scp cmds
+  ssh_opts = "-o ForwardAgent=yes "\
+             "-o ControlMaster=auto "\
+             "-o ControlPersist=60s "\
+             "-o UserKnownHostsFile=/dev/null "\
+             "-o StrictHostKeyChecking=no "\
+             "-o ConnectTimeout=10 "\
+             "-o LogLevel=quiet "
+
+  ssh_args "#{ssh_opts} -tt"
+  dk_config.set_param(Dk::Dumpdb::SCP_ARGS_PARAM_NAME, ssh_opts)
+
+  task 'restore-mysql', MysqlFullRestoreScript::Task
 end
 ```
 
